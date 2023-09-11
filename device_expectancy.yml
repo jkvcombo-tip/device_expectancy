@@ -1,0 +1,104 @@
+---
+
+- hosts: Client
+  become: true
+  
+  tasks:
+
+  - name: Fetch file from the other server
+    fetch:
+      src: /var/log/syslog
+      dest: /home/combo/Music
+
+  - name: Check if Syslog Service is Running
+    systemd:
+      name: syslog
+      state: started
+    register: syslog_status
+
+  - name: Check if Syslog Service is Enabled
+    systemd:
+      name: syslog
+      enabled: yes
+    register: syslog_enabled
+
+  - name: Display Syslog Service Status
+    debug:
+      msg: "Syslog Service is {{ syslog_status.state }} and {{ syslog_enabled.enabled }}."
+
+  - name: Check for hardware errors
+    lineinfile:
+      path: /var/log/syslog
+      regexp: 'hardware|error|fail'
+      state: absent
+    register: hardware_errors
+    check_mode: yes
+
+  - name: Check for disk issues
+    lineinfile:
+      path: /var/log/syslog
+      regexp: 'disk|storage|full'
+      state: absent
+    register: disk_issues
+    check_mode: yes
+
+  - name: Check for temperature warnings
+    lineinfile:
+      path: /var/log/syslog
+      regexp: 'overheat|temperature|thermal'
+      state: absent
+    register: temperature_warnings
+    check_mode: yes
+
+  - name: Report findings
+    debug:
+      msg:
+        - "Hardware Errors: {{ hardware_errors.found }}"
+        - "Disk Issues: {{ disk_issues.found }}"
+        - "Temperature Warnings: {{ temperature_warnings.found }}"
+    
+  - name: Check Syslog Service Status
+    service:
+      name: syslog
+    register: syslog_service
+
+  - name: Display Syslog Service Status
+    debug:
+      var: syslog_service
+
+  - name: Check Disk Space
+    ansible.builtin.command: df -h
+    register: disk_space
+
+  - name: Display Disk Space
+    debug:
+      var: disk_space.stdout_lines
+
+  - name: Check Log File Sizes
+    ansible.builtin.find:
+      paths: /var/log
+      recurse: yes
+      patterns: "syslog"
+    register: log_files
+
+  - name: Get log file size
+    ansible.builtin.stat:
+      path: /var/log/syslog
+    register: log_file_stat
+
+  - name: Display log file size
+    ansible.builtin.debug:
+      msg: "The size of the log file is {{ log_file_stat.stat.size }} bytes."
+
+  # - name: SAVE OUTPUT ./backups/
+  #   copy:
+  #     content: "{{ syslog_result.stdout[0] }}"
+  #     dest: "backups/syslog_checker{{ inventory_hostname }}.txt"  
+
+
+  handlers:
+    - name: Restart Syslog Service
+      systemd:
+        name: syslog
+        state: restarted
+      when: syslog_status.changed
