@@ -1,0 +1,46 @@
+---
+
+- hosts: Client
+  become: yes
+  become_user: combo
+  tasks:
+    - name: Check syslog file
+      stat:
+        path: /var/log/syslog
+      register: syslog_stats
+
+    - name: Check syslog file ownership and permissions
+      stat:
+        path: /var/log/syslog
+      register: syslog_perms
+      ignore_errors: yes
+
+    - name: Check syslog file size
+      debug:
+        msg: "Syslog file size is {{ syslog_stats.stat.size }} bytes."
+      when: syslog_stats.stat.exists
+
+    - name: Check syslog file ownership
+      debug:
+        msg: "Syslog file is owned by {{ syslog_perms.stat.uid }}."
+      when: syslog_perms.stat.exists
+
+    - name: Check syslog file permissions
+      debug:
+        msg: "Syslog file has permissions {{ syslog_perms.stat.mode | int }}."
+      when: syslog_perms.stat.exists
+
+    - name: Check syslog file for anomalies (customize as needed)
+      command: tail -v /var/log/syslog | grep -i 'error\|warning\|failed'
+      register: syslog_anomalies
+      ignore_errors: yes
+
+    - name: Report anomalies
+      debug:
+        msg: "Syslog anomalies: {{ syslog_anomalies.stdout }}"
+      when: syslog_anomalies.stdout_lines | length > 0
+
+    - name: Notify if syslog file is missing or inaccessible
+      fail:
+        msg: "Syslog file is missing or inaccessible."
+      when: not syslog_stats.stat.exists or not syslog_perms.stat.exists

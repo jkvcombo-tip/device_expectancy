@@ -1,0 +1,44 @@
+---
+
+- hosts: Client
+  become: true
+  become_user: combo
+  gather_facts: yes
+
+  tasks:
+
+  - name: Check if Syslog Service is Running
+    systemd:
+      name: syslog
+      state: started
+    register: syslog_status
+
+  - name: Check if Syslog Service is Enabled
+    systemd:
+      name: syslog
+      enabled: yes
+    register: syslog_enabled
+
+  - name: Fetch file from the other server
+    fetch:
+      src: /var/log/syslog
+      dest: /home/combo/Pictures
+
+  - name: Display Syslog Service Status
+    debug:
+      msg: "Syslog Service is {{ syslog_status.state }} and {{ syslog_enabled.enabled }}."
+
+  - name: Search for a specific word in syslog
+    lineinfile:
+      path: /var/log/syslog  # Replace with the actual path to your syslog file
+      regexp: "temperature"  # Replace "your_search_word" with the word you're searching for
+      state: absent
+    register: search_result
+    check_mode: yes
+
+  - name: Display search results
+    debug:
+      msg: search_result
+
+
+      
