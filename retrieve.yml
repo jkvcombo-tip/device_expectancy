@@ -1,0 +1,61 @@
+---
+
+- name: Retrieve syslog data by ID
+  hosts: Client
+  become: true
+  become_user: combo
+
+  tasks:
+
+  # - name: Get syslog data by ID
+  #   shell: grep "error" /var/log/syslog > /home/combo/Pictures/retrieve.txt
+  #   register: syslog_output
+  #   ignore_errors: yes  # Ignore errors if the ID is not found
+  #   changed_when: false  # Mark as changed even if the output is empty
+
+  # - name: Check Disk Space
+  #   command: df -h
+  #   register: disk_space
+
+  # - name: Check Disk Space
+  #   shell: df -h > /home/combo/Pictures/retrieve1.txt
+    
+  # - name: Check for temperature warnings
+  #   command: grep "overheat|temperature|thermal" /var/log/syslog
+  #   register: temperature_warnings
+  #   changed_when: false
+
+  # - name: Save the command result of temperature warnings
+  #   lineinfile:
+  #     path: /home/combo/Pictures/temp1.txt
+  #     line: "{{ temperature_warnings.stdout_lines | join('\n') }}"
+  #     create: yes
+
+  # - name: Display syslog data
+  #   debug:
+  #     var: syslog_output.stdout_lines
+
+  # - name: Display Temperature Warnings
+  #   debug:
+  #     var: temperature_warnings.stdout_lines
+
+  # - name: Display Disk Space
+  #   debug:
+  #     var: disk_space.stdout_lines
+
+  - name: Get Event IDs
+    shell: grep -i "crit" /var/log/dmesg
+    register: event_ids
+    ignore_errors: yes
+
+  # - name: Check for Dmesg errors
+  #   lineinfile:
+  #     path: /var/log/dmesg
+  #     regexp: 'emerg|alert|crit|err|warn'
+  #     state: absent
+  #     register: event_ids
+  #     check_mode: yes
+
+  - name: Display Event IDs
+    debug:
+      var: event_ids.stdout_lines

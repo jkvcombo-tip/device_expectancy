@@ -1,0 +1,41 @@
+---
+
+- hosts: Client
+  become: yes
+  become_user: combo
+  gather_facts: yes
+  tasks:
+    - name: Check if syslog file exists
+      stat:
+        path: /var/log/syslog
+      register: syslog_file
+
+    - name: Ensure syslog file is present
+      fail:
+        msg: "Syslog file '/var/log/syslog' does not exist on the target."
+      when: not syslog_file.stat.exists
+
+    - name: Check syslog file size
+      stat:
+        path: /var/log/syslog
+      register: syslog_size
+
+    - name: Ensure syslog file size is not too large
+      fail:
+        msg: "Syslog file size is too large: {{ syslog_size.stat.size / 1024 / 1024 }} MB"
+      when: syslog_size.stat.size > 50000000  # Adjust the size limit as needed
+
+    # Add more tasks here for additional checks, e.g., log rotation, permissions, etc.
+
+    - name: Report syslog health status
+      debug:
+        msg: "Syslog health check completed successfully."
+
+  handlers:
+    - name: Reload syslog service
+      service:
+        name: syslog
+        state: reloaded
+
+    # Add more handlers for any remediation tasks as needed
+

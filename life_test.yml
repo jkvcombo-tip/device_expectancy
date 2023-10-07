@@ -1,0 +1,42 @@
+---
+
+- name: Display syslog disk space and save output to a text file
+  hosts: Client
+  become: true
+  become_user: combo
+  gather_facts: yes
+
+  tasks:
+  - name: Get syslog disk space
+    ansible.builtin.shell: df -h | grep '/var/log' > /tmp/syslog_diskspace.txt
+
+  - name: Display syslog disk space output
+    ansible.builtin.command: cat /tmp/syslog_diskspace.txt
+    register: syslog_diskspace_output
+
+  - name: Save syslog disk space output to a text file
+    ansible.builtin.copy:
+      content: "{{ syslog_diskspace_output.stdout }}"
+      dest: /home/combo/Pictures/syslog_diskspace.txt
+
+
+# - name: Display syslog disk space and save output to a text file
+#   hosts: your_target_host
+#   tasks:
+#     - name: Get syslog disk space
+#       ansible.builtin.shell: df -h | grep '/var/log' > /tmp/syslog_diskspace.txt
+#       become: yes
+#       become_user: root
+
+    # - name: Display syslog disk space output
+    #   ansible.builtin.command: cat /tmp/syslog_diskspace.txt
+    #   register: syslog_diskspace_output
+    #   become: yes
+    #   become_user: root
+
+    # - name: Save syslog disk space output to a text file
+    #   ansible.builtin.copy:
+    #     content: "{{ syslog_diskspace_output.stdout }}"
+    #     dest: /path/to/save/output/syslog_diskspace.txt
+    #   become: yes
+    #   become_user: root
